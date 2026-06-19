@@ -1,225 +1,287 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import SpeechRecognition, {
+useSpeechRecognition,
+} from "react-speech-recognition";
 
 export default function Home() {
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+const [message, setMessage] = useState("");
+const [loading, setLoading] = useState(false);
 
-  const [messages, setMessages] = useState<
-    { role: string; text: string }[]
-  >([]);
+const [messages, setMessages] = useState<
+{ role: string; text: string }[]
 
-  useEffect(() => {
-    const saved = localStorage.getItem("genxora-chat");
+> ([]);
 
-    if (saved) {
-      setMessages(JSON.parse(saved));
-    }
-  }, []);
+const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    localStorage.setItem(
-      "genxora-chat",
-      JSON.stringify(messages)
-    );
-  }, [messages]);
+const {
+transcript,
+resetTranscript,
+browserSupportsSpeechRecognition,
+} = useSpeechRecognition();
 
-  const sendMessage = async () => {
-    if (!message.trim()) return;
+useEffect(() => {
+const saved = localStorage.getItem("genxora-chat");
 
-    const userMessage = message;
+```
+if (saved) {
+  setMessages(JSON.parse(saved));
+}
+```
 
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: userMessage },
-    ]);
+}, []);
 
-    setMessage("");
-    setLoading(true);
+useEffect(() => {
+localStorage.setItem(
+"genxora-chat",
+JSON.stringify(messages)
+);
+}, [messages]);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: userMessage,
-        }),
-      });
+useEffect(() => {
+messagesEndRef.current?.scrollIntoView({
+behavior: "smooth",
+});
+}, [messages]);
 
-      const data = await res.json();
+useEffect(() => {
+if (transcript) {
+setMessage(transcript);
+}
+}, [transcript]);
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", text: data.reply },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: "⚠️ Error connecting to AI.",
-        },
-      ]);
-    }
+const sendMessage = async () => {
+if (!message.trim()) return;
 
-    setLoading(false);
-  };
+```
+const userMessage = message;
 
-  const clearChat = () => {
-    setMessages([]);
-    localStorage.removeItem("genxora-chat");
-  };
+setMessages((prev) => [
+  ...prev,
+  { role: "user", text: userMessage },
+]);
 
-  const startListening = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+setMessage("");
+setLoading(true);
 
-    if (!SpeechRecognition) {
-      alert("Speech Recognition not supported");
-      return;
-    }
+try {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: userMessage,
+    }),
+  });
 
-    const recognition = new SpeechRecognition();
+  const data = await res.json();
 
-    recognition.lang = "en-US";
+  setMessages((prev) => [
+    ...prev,
+    { role: "ai", text: data.reply },
+  ]);
+} catch {
+  setMessages((prev) => [
+    ...prev,
+    {
+      role: "ai",
+      text: "⚠️ Error connecting to AI.",
+    },
+  ]);
+}
 
-    recognition.onresult = (event: any) => {
-      setMessage(event.results[0][0].transcript);
-    };
+setLoading(false);
+```
 
-    recognition.start();
-  };
+};
 
-  return (
-    <div
+const clearChat = () => {
+setMessages([]);
+localStorage.removeItem("genxora-chat");
+};
+
+const startListening = () => {
+if (!browserSupportsSpeechRecognition) {
+alert("Speech Recognition not supported");
+return;
+}
+
+```
+resetTranscript();
+
+SpeechRecognition.startListening({
+  continuous: false,
+  language: "en-US",
+});
+```
+
+};
+
+return (
+<div
+style={{
+minHeight: "100vh",
+background: "#111",
+color: "white",
+padding: "20px",
+fontFamily: "Arial",
+}}
+>
+<h1
+style={{
+textAlign: "center",
+marginBottom: "20px",
+}}
+>
+🚀 Gen-Xora AI Assistant </h1>
+
+```
+  <div
+    style={{
+      textAlign: "center",
+      marginBottom: "20px",
+    }}
+  >
+    <button
+      onClick={clearChat}
       style={{
-        minHeight: "100vh",
-        background: "#111",
+        background: "#dc2626",
         color: "white",
-        padding: "20px",
+        border: "none",
+        padding: "10px 15px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        marginRight: "10px",
       }}
     >
-      <h1 style={{ textAlign: "center" }}>
-        🤖 Gen-Xora AI
-      </h1>
+      🗑 Clear Chat
+    </button>
 
+    <button
+      onClick={() => {
+        setMessages([]);
+        localStorage.removeItem(
+          "genxora-chat"
+        );
+      }}
+      style={{
+        background: "#16a34a",
+        color: "white",
+        border: "none",
+        padding: "10px 15px",
+        borderRadius: "8px",
+        cursor: "pointer",
+      }}
+    >
+      ➕ New Chat
+    </button>
+  </div>
+
+  <div
+    style={{
+      maxWidth: "1000px",
+      width: "95%",
+      margin: "auto",
+    }}
+  >
+    {messages.map((msg, index) => (
       <div
+        key={index}
         style={{
-          textAlign: "center",
-          marginBottom: "20px",
+          background:
+            msg.role === "user"
+              ? "#2563eb"
+              : "#222",
+          padding: "15px",
+          borderRadius: "10px",
+          marginBottom: "10px",
+          whiteSpace: "pre-wrap",
         }}
       >
-        <button
-          onClick={clearChat}
-          style={{
-            background: "#dc2626",
-            color: "white",
-            border: "none",
-            padding: "10px 15px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            marginRight: "10px",
-          }}
-        >
-          🗑 Clear Chat
-        </button>
-      </div>
+        <strong>
+          {msg.role === "user"
+            ? "👤 You"
+            : "🤖 Gen-Xora"}
+        </strong>
 
+        <ReactMarkdown>
+          {msg.text}
+        </ReactMarkdown>
+      </div>
+    ))}
+
+    <div ref={messagesEndRef}></div>
+
+    {loading && (
       <div
         style={{
-          maxWidth: "900px",
-          margin: "auto",
+          background: "#222",
+          padding: "12px",
+          borderRadius: "10px",
+          marginBottom: "10px",
         }}
       >
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            style={{
-              background:
-                msg.role === "user"
-                  ? "#2563eb"
-                  : "#222",
-              padding: "12px",
-              borderRadius: "10px",
-              marginBottom: "10px",
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            <strong>
-              {msg.role === "user"
-                ? "👤 You"
-                : "🤖 Gen-Xora"}
-            </strong>
-
-            <ReactMarkdown>
-              {msg.text}
-            </ReactMarkdown>
-          </div>
-        ))}
-
-        {loading && (
-          <div
-            style={{
-              background: "#222",
-              padding: "12px",
-              borderRadius: "10px",
-              marginBottom: "10px",
-            }}
-          >
-            🤖 Thinking...
-          </div>
-        )}
-
-        <input
-          type="text"
-          value={message}
-          placeholder="Ask anything..."
-          onChange={(e) =>
-            setMessage(e.target.value)
-          }
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              sendMessage();
-            }
-          }}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            marginTop: "10px",
-          }}
-        />
-
-        <div style={{ marginTop: "10px" }}>
-          <button
-            onClick={startListening}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "10px",
-              cursor: "pointer",
-              marginRight: "10px",
-            }}
-          >
-            🎤 Speak
-          </button>
-
-          <button
-            onClick={sendMessage}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
-          >
-            Send
-          </button>
-        </div>
+        🤖 Gen-Xora is thinking...
       </div>
+    )}
+
+    <input
+      type="text"
+      value={message}
+      placeholder="Ask anything..."
+      onChange={(e) =>
+        setMessage(e.target.value)
+      }
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      }}
+      style={{
+        width: "100%",
+        padding: "12px",
+        borderRadius: "10px",
+        border: "none",
+        marginTop: "10px",
+        fontSize: "16px",
+      }}
+    />
+
+    <div
+      style={{
+        marginTop: "10px",
+      }}
+    >
+      <button
+        onClick={startListening}
+        style={{
+          padding: "10px 20px",
+          borderRadius: "10px",
+          cursor: "pointer",
+          marginRight: "10px",
+        }}
+      >
+        🎤 Speak
+      </button>
+
+      <button
+        onClick={sendMessage}
+        style={{
+          padding: "10px 20px",
+          borderRadius: "10px",
+          cursor: "pointer",
+        }}
+      >
+        🚀 Send
+      </button>
     </div>
-  );
+  </div>
+</div>
+```
+
+);
 }
