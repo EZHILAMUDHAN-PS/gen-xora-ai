@@ -174,21 +174,31 @@ export default function Home() {
             }
           }}
           style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            marginTop: "10px",
-          }}
+  width: "100%",
+  padding: "15px",
+  borderRadius: "10px",
+  marginTop: "15px",
+  backgroundColor: "#222",
+  color: "white",
+  border: "1px solid #555",
+  outline: "none",
+  fontSize: "16px",
+  boxSizing: "border-box",
+}}
         />
 
         <button
           onClick={sendMessage}
           style={{
-            marginTop: "10px",
-            padding: "10px 20px",
-            borderRadius: "10px",
-            cursor: "pointer",
-          }}
+  marginTop: "15px",
+  padding: "12px 20px",
+  borderRadius: "10px",
+  cursor: "pointer",
+  backgroundColor: "#2563eb",
+  color: "white",
+  border: "none",
+  fontSize: "16px",
+}}
         >
           🚀 Send
         </button>
