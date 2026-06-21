@@ -8,6 +8,7 @@ import SpeechRecognition, {
 export default function Home() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
 
   const [messages, setMessages] = useState<
     { role: string; text: string }[]
@@ -74,7 +75,11 @@ export default function Home() {
   data.reply
 );
 
-speechSynthesis.speak(utterance);
+utterance.lang = "en-US";
+
+window.speechSynthesis.speak(
+  utterance
+);
 
       setMessages((prev) => [
         ...prev,
@@ -223,6 +228,19 @@ speechSynthesis.speak(utterance);
             🤖 Typing...
           </div>
         )}
+        <input
+  type="file"
+  accept="image/*"
+  onChange={(e) => {
+    if (e.target.files?.[0]) {
+      setImage(e.target.files[0]);
+    }
+  }}
+  style={{
+    marginBottom: "10px",
+    color: "white",
+  }}
+/>
 
         <input
           type="text"
