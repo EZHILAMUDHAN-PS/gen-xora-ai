@@ -201,39 +201,9 @@ window.speechSynthesis.speak(
           marginBottom: "20px",
         }}
       >
-        <button
-          onClick={clearChat}
-          style={{
-            background: "#dc2626",
-            color: "white",
-            border: "none",
-            padding: "10px 15px",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          🗑 Clear Chat
-        </button>
-        <button
-  onClick={() => {
-    setChats((prev) => ({
-  ...prev,
-  [currentChat]: [],
-}));
-    localStorage.removeItem("genxora-chat");
-  }}
-  style={{
-    background: "#16a34a",
-    color: "white",
-    border: "none",
-    padding: "10px 15px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    marginLeft: "10px",
-  }}
->
-  ➕ New Chat
-</button>
+        
+        
+
       </div>
 
       <div
