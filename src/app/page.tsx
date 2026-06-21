@@ -2,7 +2,9 @@
 
 import ReactMarkdown from "react-markdown";
 import { useState, useEffect, useRef } from "react";
-
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 export default function Home() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -12,6 +14,11 @@ export default function Home() {
   >([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const {
+  transcript,
+  resetTranscript,
+  browserSupportsSpeechRecognition,
+} = useSpeechRecognition();
 
   useEffect(() => {
     const saved = localStorage.getItem("genxora-chat");
@@ -32,6 +39,11 @@ export default function Home() {
       behavior: "smooth",
     });
   }, [messages]);
+  useEffect(() => {
+  if (transcript) {
+    setMessage(transcript);
+  }
+}, [transcript]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
@@ -80,6 +92,19 @@ export default function Home() {
     setMessages([]);
     localStorage.removeItem("genxora-chat");
   };
+  const startListening = () => {
+  if (!browserSupportsSpeechRecognition) {
+    alert("Speech Recognition not supported");
+    return;
+  }
+
+  resetTranscript();
+
+  SpeechRecognition.startListening({
+    continuous: false,
+    language: "en-US",
+  });
+};
 
   return (
     <div
@@ -186,6 +211,18 @@ export default function Home() {
   boxSizing: "border-box",
 }}
         />
+        <button
+  onClick={startListening}
+  style={{
+    marginTop: "10px",
+    marginRight: "10px",
+    padding: "10px 20px",
+    borderRadius: "10px",
+    cursor: "pointer",
+  }}
+>
+  🎤 Speak
+</button>
 
         <button
           onClick={sendMessage}
