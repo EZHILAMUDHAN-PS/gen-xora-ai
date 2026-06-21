@@ -70,6 +70,11 @@ export default function Home() {
       });
 
       const data = await res.json();
+      const utterance = new SpeechSynthesisUtterance(
+  data.reply
+);
+
+speechSynthesis.speak(utterance);
 
       setMessages((prev) => [
         ...prev,
@@ -139,6 +144,23 @@ export default function Home() {
         >
           🗑 Clear Chat
         </button>
+        <button
+  onClick={() => {
+    setMessages([]);
+    localStorage.removeItem("genxora-chat");
+  }}
+  style={{
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    padding: "10px 15px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    marginLeft: "10px",
+  }}
+>
+  ➕ New Chat
+</button>
       </div>
 
       <div
@@ -169,6 +191,22 @@ export default function Home() {
             <ReactMarkdown>
               {msg.text}
             </ReactMarkdown>
+            <button
+  onClick={() =>
+    navigator.clipboard.writeText(msg.text)
+  }
+  style={{
+    marginTop: "10px",
+    background: "#444",
+    color: "white",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: "5px",
+    cursor: "pointer",
+  }}
+>
+  📋 Copy
+</button>
           </div>
         ))}
 
@@ -182,7 +220,7 @@ export default function Home() {
               borderRadius: "10px",
             }}
           >
-            🤖 Gen-Xora is thinking...
+            🤖 Typing...
           </div>
         )}
 
