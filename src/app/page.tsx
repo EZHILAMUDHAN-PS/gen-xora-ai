@@ -13,6 +13,7 @@ export default function Home() {
   const [messages, setMessages] = useState<
     { role: string; text: string }[]
   >([]);
+  const [chatTitle] = useState("Chat 1");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
@@ -116,16 +117,42 @@ window.speechSynthesis.speak(
   });
 };
 
-  return (
+ return (
+  <div
+    style={{
+      display: "flex",
+      minHeight: "100vh",
+      background: "#111",
+      color: "white",
+      fontFamily: "Arial",
+    }}
+  >
     <div
-      style={{
-        minHeight: "100vh",
-        background: "#111",
-        color: "white",
-        padding: "20px",
-        fontFamily: "Arial",
-      }}
-    >
+  style={{
+    width: "250px",
+    background: "#1a1a1a",
+    padding: "20px",
+    borderRight: "1px solid #333",
+  }}
+>
+  <h2>🚀 Gen-Xora</h2>
+
+  <button
+    onClick={clearChat}
+    style={{
+      width: "100%",
+      padding: "10px",
+      borderRadius: "8px",
+      border: "none",
+      cursor: "pointer",
+      marginBottom: "15px",
+    }}
+  >
+    ➕ New Chat
+  </button>
+
+  <div>💬 {chatTitle}</div>
+</div>
       <h1 style={{ textAlign: "center" }}>
         🚀 Gen-Xora AI Assistant
       </h1>
@@ -169,11 +196,11 @@ window.speechSynthesis.speak(
       </div>
 
       <div
-        style={{
-          maxWidth: "1000px",
-          margin: "auto",
-        }}
-      >
+  style={{
+    flex: 1,
+    padding: "20px",
+  }}
+>
         {messages.map((msg, index) => (
           <div
             key={index}
