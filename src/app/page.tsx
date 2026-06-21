@@ -367,6 +367,7 @@ export default function Home() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const[voiceEnabled,setVoiceEnabled]=useState(false);
 
   const [chats, setChats] = useState<ChatStore>({});
   const [chatTitles, setChatTitles] = useState<ChatTitles>({});
@@ -533,12 +534,17 @@ export default function Home() {
 
       const data = await res.json();
 
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(data.reply);
-        utterance.lang = "en-US";
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
-      }
+      if (
+  voiceEnabled &&
+  typeof window !== "undefined" &&
+  "speechSynthesis" in window
+) {
+  const utterance = new SpeechSynthesisUtterance(data.reply);
+  utterance.lang = "en-US";
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
 
       setChats((prev) => ({
         ...prev,
@@ -800,8 +806,26 @@ export default function Home() {
                 onClick={startListening}
               >
                 <MicIcon />
+                
               </button>
-
+              <button
+  type="button"
+  className="gx-icon-btn"
+  style={{
+    ...styles.iconBtn,
+    width: "90px",
+    color: voiceEnabled
+      ? "#22c55e"
+      : "#aaaaaa",
+  }}
+  onClick={() =>
+    setVoiceEnabled(!voiceEnabled)
+  }
+>
+  {voiceEnabled
+    ? "Voice ON"
+    : "Voice OFF"}
+</button>
               <button
                 type="button"
                 className="gx-send-btn"
