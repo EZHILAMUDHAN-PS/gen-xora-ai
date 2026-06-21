@@ -165,15 +165,23 @@ window.speechSynthesis.speak(
   >
     <div
   style={{
-    width: "250px",
+    width: "280px",
     background: "#1a1a1a",
     padding: "20px",
     borderRight: "1px solid #333",
   }}
 >
-  <h2>🚀 Gen-Xora</h2>
+ <h2
+  style={{
+    color: "white",
+    marginBottom: "20px",
+    fontSize: "24px",
+  }}
+>
+  🚀 Gen-Xora
+</h2>
 
-  <button
+ <button
   onClick={() => {
     const newChat =
       "Chat " +
@@ -186,6 +194,17 @@ window.speechSynthesis.speak(
 
     setCurrentChat(newChat);
   }}
+  style={{
+    width: "100%",
+    background: "#2d2d2d",
+    color: "white",
+    border: "1px solid #444",
+    padding: "12px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    marginBottom: "20px",
+    fontSize: "15px",
+  }}
 >
   ➕ New Chat
 </button>
@@ -193,19 +212,55 @@ window.speechSynthesis.speak(
   {Object.keys(chats).map((chat) => (
   <div
     key={chat}
-    onClick={() => setCurrentChat(chat)}
     style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
       padding: "10px",
-      cursor: "pointer",
+      marginBottom: "8px",
+      borderRadius: "8px",
       background:
         currentChat === chat
           ? "#333"
           : "transparent",
-      borderRadius: "5px",
-      marginBottom: "5px",
     }}
   >
-    💬 {chat}
+    <span
+      onClick={() => setCurrentChat(chat)}
+      style={{
+        cursor: "pointer",
+        flex: 1,
+      }}
+    >
+      💬 {chat}
+    </span>
+
+    <span
+      onClick={() => {
+        const updated = { ...chats };
+
+        delete updated[chat];
+
+        if (
+          Object.keys(updated).length === 0
+        ) {
+          updated["Chat 1"] = [];
+          setCurrentChat("Chat 1");
+        } else {
+          setCurrentChat(
+            Object.keys(updated)[0]
+          );
+        }
+
+        setChats(updated);
+      }}
+      style={{
+        cursor: "pointer",
+        color: "red",
+      }}
+    >
+      🗑
+    </span>
   </div>
 ))}
 </div>
@@ -230,6 +285,14 @@ window.speechSynthesis.speak(
     padding: "20px",
   }}
 >
+  <h2
+  style={{
+    marginBottom: "20px",
+    color: "#ddd",
+  }}
+>
+  {currentChat}
+</h2>
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -286,14 +349,14 @@ window.speechSynthesis.speak(
         )}
       <label
   style={{
-    display: "inline-block",
-    background: "#2563eb",
-    color: "white",
-    padding: "10px 15px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    marginBottom: "10px",
-  }}
+  display: "inline-block",
+  background: "#2563eb",
+  color: "white",
+  padding: "12px 18px",
+  borderRadius: "10px",
+  cursor: "pointer",
+  marginBottom: "15px",
+}}
 >
   📷 Upload Image
   <input
