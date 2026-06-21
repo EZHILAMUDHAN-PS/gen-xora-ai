@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       contents: message,
     });
 
@@ -18,13 +18,10 @@ export async function POST(req: Request) {
       reply: response.text,
     });
   } catch (error: any) {
-    console.error("Gemini Error:", error);
+  console.error("FULL ERROR:", error);
 
-    return NextResponse.json(
-      {
-        reply: `Error: ${error?.message || "Unknown error"}`,
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({
+    reply: JSON.stringify(error),
+  });
+}
 }
