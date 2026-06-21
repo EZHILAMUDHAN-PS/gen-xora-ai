@@ -284,20 +284,51 @@ window.speechSynthesis.speak(
             🤖 Typing...
           </div>
         )}
-        <input
-  type="file"
-  accept="image/*"
-  onChange={(e) => {
-    if (e.target.files?.[0]) {
-      setImage(e.target.files[0]);
-    }
-  }}
+      <label
   style={{
-    marginBottom: "10px",
+    display: "inline-block",
+    background: "#2563eb",
     color: "white",
+    padding: "10px 15px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    marginBottom: "10px",
   }}
-/>
-
+>
+  📷 Upload Image
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      if (e.target.files?.[0]) {
+        setImage(e.target.files[0]);
+      }
+    }}
+    hidden
+  />
+</label>
+{image && (
+  <p
+    style={{
+      color: "#aaa",
+      marginTop: "10px",
+    }}
+  >
+    📎 {image.name}
+  </p>
+)}
+{image && (
+  <img
+    src={URL.createObjectURL(image)}
+    alt="Preview"
+    style={{
+      width: "200px",
+      borderRadius: "10px",
+      marginTop: "10px",
+      marginBottom: "10px",
+    }}
+  />
+)}
         <input
           type="text"
           value={message}
