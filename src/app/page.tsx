@@ -132,13 +132,6 @@ window.speechSynthesis.speak(
     setLoading(false);
   };
 
-  const clearChat = () => {
-    setChats((prev) => ({
-  ...prev,
-  [currentChat]: [],
-}));
-    localStorage.removeItem("genxora-chat");
-  };
   const startListening = () => {
   if (!browserSupportsSpeechRecognition) {
     alert("Speech Recognition not supported");
@@ -178,7 +171,7 @@ window.speechSynthesis.speak(
     fontSize: "24px",
   }}
 >
-  🚀 Gen-Xora
+   Gen-Xora
 </h2>
 
  <button
@@ -206,7 +199,7 @@ window.speechSynthesis.speak(
     fontSize: "15px",
   }}
 >
-  ➕ New Chat
+   New Chat
 </button>
 
   {Object.keys(chats).map((chat) => (
@@ -232,7 +225,7 @@ window.speechSynthesis.speak(
         flex: 1,
       }}
     >
-      💬 {chat}
+       {chat}
     </span>
 
     <span
@@ -259,14 +252,12 @@ window.speechSynthesis.speak(
         color: "red",
       }}
     >
-      🗑
+      Delete
     </span>
   </div>
 ))}
 </div>
-      <h1 style={{ textAlign: "center" }}>
-        🚀 Gen-Xora AI Assistant
-      </h1>
+      
 
       <div
         style={{
@@ -282,7 +273,10 @@ window.speechSynthesis.speak(
       <div
   style={{
     flex: 1,
-    padding: "20px",
+padding: "30px",
+maxWidth: "900px",
+width: "100%",
+margin: "0 auto",
   }}
 >
   <h2
@@ -297,40 +291,25 @@ window.speechSynthesis.speak(
           <div
             key={index}
             style={{
-              background:
-                msg.role === "user"
-                  ? "#2563eb"
-                  : "#222",
-              padding: "15px",
-              borderRadius: "10px",
+            background:
+  msg.role === "user"
+    ? "#2f2f2f"
+    : "#1f1f1f",
+             padding: "15px",
+borderRadius: "12px",
+maxWidth: "80%",
               marginBottom: "10px",
             }}
           >
             <strong>
               {msg.role === "user"
-                ? "👤 You"
-                : "🤖 Gen-Xora"}
+                ? " You"
+                : " Assistant"}
             </strong>
 
             <ReactMarkdown>
               {msg.text}
             </ReactMarkdown>
-            <button
-  onClick={() =>
-    navigator.clipboard.writeText(msg.text)
-  }
-  style={{
-    marginTop: "10px",
-    background: "#444",
-    color: "white",
-    border: "none",
-    padding: "5px 10px",
-    borderRadius: "5px",
-    cursor: "pointer",
-  }}
->
-  📋 Copy
-</button>
           </div>
         ))}
 
@@ -344,107 +323,89 @@ window.speechSynthesis.speak(
               borderRadius: "10px",
             }}
           >
-            🤖 Typing...
+             Thinking...
           </div>
         )}
-      <label
+     <div
   style={{
-  display: "inline-block",
-  background: "#2563eb",
-  color: "white",
-  padding: "12px 18px",
-  borderRadius: "10px",
-  cursor: "pointer",
-  marginBottom: "15px",
-}}
->
-  📷 Upload Image
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => {
-      if (e.target.files?.[0]) {
-        setImage(e.target.files[0]);
-      }
-    }}
-    hidden
-  />
-</label>
-{image && (
-  <p
-    style={{
-      color: "#aaa",
-      marginTop: "10px",
-    }}
-  >
-    📎 {image.name}
-  </p>
-)}
-{image && (
-  <img
-    src={URL.createObjectURL(image)}
-    alt="Preview"
-    style={{
-      width: "200px",
-      borderRadius: "10px",
-      marginTop: "10px",
-      marginBottom: "10px",
-    }}
-  />
-)}
-        <input
-          type="text"
-          value={message}
-          placeholder="Ask anything..."
-          onChange={(e) =>
-            setMessage(e.target.value)
-          }
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              sendMessage();
-            }
-          }}
-          style={{
-  width: "100%",
-  padding: "15px",
-  borderRadius: "10px",
-  marginTop: "15px",
-  backgroundColor: "#222",
-  color: "white",
-  border: "1px solid #555",
-  outline: "none",
-  fontSize: "16px",
-  boxSizing: "border-box",
-}}
-        />
-        <button
-  onClick={startListening}
-  style={{
-    marginTop: "10px",
-    marginRight: "10px",
-    padding: "10px 20px",
-    borderRadius: "10px",
-    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    background: "#2a2a2a",
+    border: "1px solid #444",
+    borderRadius: "14px",
+    padding: "10px",
+    marginTop: "20px",
   }}
 >
-  🎤 Speak
-</button>
+  <label
+    style={{
+      cursor: "pointer",
+      color: "#aaa",
+      whiteSpace: "nowrap",
+    }}
+  >
+    Attach
+    <input
+      type="file"
+      accept="image/*"
+      onChange={(e) => {
+        if (e.target.files?.[0]) {
+          setImage(e.target.files[0]);
+        }
+      }}
+      hidden
+    />
+  </label>
 
-        <button
-          onClick={sendMessage}
-          style={{
-  marginTop: "15px",
-  padding: "12px 20px",
-  borderRadius: "10px",
-  cursor: "pointer",
-  backgroundColor: "#2563eb",
-  color: "white",
-  border: "none",
-  fontSize: "16px",
-}}
-        >
-          🚀 Send
-        </button>
+  <input
+    type="text"
+    value={message}
+    placeholder="Message Gen-Xora..."
+    onChange={(e) =>
+      setMessage(e.target.value)
+    }
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    }}
+    style={{
+      flex: 1,
+      background: "transparent",
+      border: "none",
+      outline: "none",
+      color: "white",
+      fontSize: "15px",
+    }}
+  />
+
+  <button
+    onClick={startListening}
+    style={{
+      background: "transparent",
+      border: "none",
+      color: "#aaa",
+      cursor: "pointer",
+    }}
+  >
+    Voice
+  </button>
+
+  <button
+    onClick={sendMessage}
+    style={{
+      background: "#fff",
+      color: "#000",
+      border: "none",
+      borderRadius: "8px",
+      padding: "8px 14px",
+      cursor: "pointer",
+    }}
+  >
+    Send
+  </button>
+</div>
       </div>
     </div>
   );
