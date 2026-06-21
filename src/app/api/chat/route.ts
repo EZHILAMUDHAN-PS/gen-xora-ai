@@ -3,16 +3,31 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const { message , image} = await req.json();
     console.log("API KEY=",process.env.GEMINI_API_KEY);
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY!,
     });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: message,
-    });
+   const response =
+  await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: image
+      ? [
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: image.split(",")[1],
+            },
+          },
+          {
+            text:
+              message ||
+              "Describe this image",
+          },
+        ]
+      : message,
+  });
 
     return NextResponse.json({
       reply: response.text,

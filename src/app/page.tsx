@@ -52,7 +52,23 @@ const messages = chats[currentChat] || [];
     setMessage(transcript);
   }
 }, [transcript]);
+const convertToBase64 = (
+  file: File
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
+    reader.readAsDataURL(file);
+
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+
+    reader.onerror = (error) => {
+      reject(error);
+    };
+  });
+};
   const sendMessage = async () => {
     if (!message.trim()) return;
 
@@ -66,7 +82,6 @@ const messages = chats[currentChat] || [];
   ],
 }));
 
-    
     setLoading(true);
 
     try {
@@ -76,8 +91,11 @@ const messages = chats[currentChat] || [];
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: userMessage,
-        }),
+  message: userMessage,
+  image: image
+    ? await convertToBase64(image)
+    : null,
+}),
       });
 
       const data = await res.json();
