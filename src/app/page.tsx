@@ -10,10 +10,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [image, setImage] = useState<File | null>(null);
 
-  const [messages, setMessages] = useState<
-    { role: string; text: string }[]
-  >([]);
-  const [chatTitle] = useState("Chat 1");
+  const [currentChat, setCurrentChat] = useState("Chat 1");
+
+const [chats, setChats] = useState<{
+  [key: string]: { role: string; text: string }[];
+}>({
+  "Chat 1": [],
+});
+
+const messages = chats[currentChat] || [];
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
@@ -22,19 +27,20 @@ export default function Home() {
   browserSupportsSpeechRecognition,
 } = useSpeechRecognition();
 
-  useEffect(() => {
-    const saved = localStorage.getItem("genxora-chat");
-    if (saved) {
-      setMessages(JSON.parse(saved));
-    }
-  }, []);
+ useEffect(() => {
+  const saved = localStorage.getItem("genxora-chats");
 
-  useEffect(() => {
-    localStorage.setItem(
-      "genxora-chat",
-      JSON.stringify(messages)
-    );
-  }, [messages]);
+  if (saved) {
+    setChats(JSON.parse(saved));
+  }
+}, []);
+
+ useEffect(() => {
+  localStorage.setItem(
+    "genxora-chats",
+    JSON.stringify(chats)
+  );
+}, [chats]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -52,12 +58,15 @@ export default function Home() {
 
     const userMessage = message;
 
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: userMessage },
-    ]);
+   setChats((prev) => ({
+  ...prev,
+  [currentChat]: [
+    ...(prev[currentChat] || []),
+    { role: "user", text: userMessage },
+  ],
+}));
 
-    setMessage("");
+    
     setLoading(true);
 
     try {
@@ -82,25 +91,34 @@ window.speechSynthesis.speak(
   utterance
 );
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", text: data.reply },
-      ]);
+      setChats((prev) => ({
+  ...prev,
+  [currentChat]: [
+    ...(prev[currentChat] || []),
+    { role: "ai", text: data.reply },
+  ],
+}));
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: "⚠️ Error connecting to AI.",
-        },
-      ]);
+      setChats((prev) => ({
+  ...prev,
+  [currentChat]: [
+    ...(prev[currentChat] || []),
+    {
+      role: "ai",
+      text: "⚠️ Error connecting to AI.",
+    },
+  ],
+}));
     }
 
     setLoading(false);
   };
 
   const clearChat = () => {
-    setMessages([]);
+    setChats((prev) => ({
+  ...prev,
+  [currentChat]: [],
+}));
     localStorage.removeItem("genxora-chat");
   };
   const startListening = () => {
@@ -138,20 +156,40 @@ window.speechSynthesis.speak(
   <h2>🚀 Gen-Xora</h2>
 
   <button
-    onClick={clearChat}
+  onClick={() => {
+    const newChat =
+      "Chat " +
+      (Object.keys(chats).length + 1);
+
+    setChats((prev) => ({
+      ...prev,
+      [newChat]: [],
+    }));
+
+    setCurrentChat(newChat);
+  }}
+>
+  ➕ New Chat
+</button>
+
+  {Object.keys(chats).map((chat) => (
+  <div
+    key={chat}
+    onClick={() => setCurrentChat(chat)}
     style={{
-      width: "100%",
       padding: "10px",
-      borderRadius: "8px",
-      border: "none",
       cursor: "pointer",
-      marginBottom: "15px",
+      background:
+        currentChat === chat
+          ? "#333"
+          : "transparent",
+      borderRadius: "5px",
+      marginBottom: "5px",
     }}
   >
-    ➕ New Chat
-  </button>
-
-  <div>💬 {chatTitle}</div>
+    💬 {chat}
+  </div>
+))}
 </div>
       <h1 style={{ textAlign: "center" }}>
         🚀 Gen-Xora AI Assistant
@@ -178,7 +216,10 @@ window.speechSynthesis.speak(
         </button>
         <button
   onClick={() => {
-    setMessages([]);
+    setChats((prev) => ({
+  ...prev,
+  [currentChat]: [],
+}));
     localStorage.removeItem("genxora-chat");
   }}
   style={{
