@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { message , image} = await req.json();
-    console.log("API KEY=",process.env.GEMINI_API_KEY);
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY!,
     });
