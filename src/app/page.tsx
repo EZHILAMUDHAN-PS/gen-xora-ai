@@ -367,8 +367,7 @@ export default function Home() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const[voiceEnabled,setVoiceEnabled]=useState(false);
-
+const [voiceEnabled, setVoiceEnabled] = useState(false);    
   const [chats, setChats] = useState<ChatStore>({});
   const [chatTitles, setChatTitles] = useState<ChatTitles>({});
   const [chatOrder, setChatOrder] = useState<string[]>([]);
@@ -532,18 +531,29 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
+     if (!res.ok) {
+  throw new Error("API Error");
+}
 
-      if (
+const data = await res.json();
+
+     if (
   voiceEnabled &&
   typeof window !== "undefined" &&
   "speechSynthesis" in window
 ) {
-  const utterance = new SpeechSynthesisUtterance(data.reply);
+  window.speechSynthesis.cancel();
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      data.reply
+    );
+
   utterance.lang = "en-US";
 
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  window.speechSynthesis.speak(
+    utterance
+  );
 }
 
       setChats((prev) => ({
@@ -647,7 +657,25 @@ export default function Home() {
       {/* Sidebar */}
       <aside style={styles.sidebar}>
         <div style={styles.sidebarHeader}>Gen-Xora</div>
-
+        <label
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    marginBottom: "12px",
+    fontSize: "13px",
+    color: "#ccc",
+  }}
+>
+  <input
+    type="checkbox"
+    checked={voiceEnabled}
+    onChange={() =>
+      setVoiceEnabled(!voiceEnabled)
+    }
+  />
+  Voice Output
+</label>
         <button
           type="button"
           className="gx-new-chat-btn"
@@ -806,26 +834,8 @@ export default function Home() {
                 onClick={startListening}
               >
                 <MicIcon />
-                
               </button>
-              <button
-  type="button"
-  className="gx-icon-btn"
-  style={{
-    ...styles.iconBtn,
-    width: "90px",
-    color: voiceEnabled
-      ? "#22c55e"
-      : "#aaaaaa",
-  }}
-  onClick={() =>
-    setVoiceEnabled(!voiceEnabled)
-  }
->
-  {voiceEnabled
-    ? "Voice ON"
-    : "Voice OFF"}
-</button>
+
               <button
                 type="button"
                 className="gx-send-btn"
