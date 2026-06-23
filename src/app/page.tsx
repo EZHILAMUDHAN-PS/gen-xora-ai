@@ -22,6 +22,8 @@ interface StoredData {
   chatTitles: ChatTitles;
   chatOrder: string[];
   currentChatId: string;
+  pinnedChats: Record<string, boolean>;
+  renamedChats: Record<string, boolean>;
 }
 
 const STORAGE_KEY = "genxora-data";
@@ -114,7 +116,33 @@ function CloseIcon() {
     </svg>
   );
 }
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
 
+function PinIcon({ filled = false }: { filled?: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="17" x2="12" y2="22" />
+      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
 /* ---------- Styles ---------- */
 
 const styles: Record<string, CSSProperties> = {
@@ -193,6 +221,47 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     padding: "4px",
     borderRadius: "6px",
+  },
+  searchWrap: {
+    position: "relative",
+    marginBottom: "12px",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "10px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#888888",
+    display: "flex",
+    pointerEvents: "none",
+  },
+  searchInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "#1c1c1c",
+    border: "1px solid #333333",
+    borderRadius: "8px",
+    padding: "9px 10px 9px 32px",
+    color: "#ececec",
+    fontSize: "13px",
+    outline: "none",
+  },
+  chatActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "2px",
+  },
+  renameInput: {
+    flex: 1,
+    width: "100%",
+    boxSizing: "border-box",
+    background: "#111111",
+    border: "1px solid #555555",
+    borderRadius: "6px",
+    padding: "4px 6px",
+    color: "#ececec",
+    fontSize: "13.5px",
+    outline: "none",
   },
   main: {
     flex: 1,
@@ -375,7 +444,13 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [chatOrder, setChatOrder] = useState<string[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>("");
   const [hydrated, setHydrated] = useState(false);
-
+  const [pinnedChats, setPinnedChats] = useState<Record<string, boolean>>({});
+  const [renamedChats, setRenamedChats] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [geminiModel, setGeminiModel] = useState<"flash" | "pro">("flash");
+  const skipBlurCommitRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -384,7 +459,22 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
     useSpeechRecognition();
 
   const messages = chats[currentChatId] || [];
+  const sortedChatOrder = [...chatOrder].sort((a, b) => {
+    const aPinned = pinnedChats[a] ? 1 : 0;
+    const bPinned = pinnedChats[b] ? 1 : 0;
+    return bPinned - aPinned;
+  });
 
+  const visibleChatOrder = searchQuery.trim()
+    ? sortedChatOrder.filter((id) => {
+        const q = searchQuery.trim().toLowerCase();
+        const titleMatch = (chatTitles[id] || DEFAULT_TITLE).toLowerCase().includes(q);
+        const contentMatch = (chats[id] || []).some((m) =>
+          m.text.toLowerCase().includes(q)
+        );
+        return titleMatch || contentMatch;
+      })
+    : sortedChatOrder;
   // Load persisted state on first render
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -397,6 +487,8 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
         setCurrentChatId(
           parsed.currentChatId || Object.keys(parsed.chats || {})[0] || ""
         );
+        setPinnedChats(parsed.pinnedChats || {});
+        setRenamedChats(parsed.renamedChats || {});
       } catch {
         // Corrupt storage, fall back to empty state
       }
@@ -417,11 +509,18 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
   }, [hydrated, chatOrder.length]);
 
   // Persist state on every change
-  useEffect(() => {
+ useEffect(() => {
     if (!hydrated) return;
-    const data: StoredData = { chats, chatTitles, chatOrder, currentChatId };
+    const data: StoredData = {
+      chats,
+      chatTitles,
+      chatOrder,
+      currentChatId,
+      pinnedChats,
+      renamedChats,
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [chats, chatTitles, chatOrder, currentChatId, hydrated]);
+  }, [chats, chatTitles, chatOrder, currentChatId, pinnedChats, renamedChats, hydrated]);
 
   // Auto scroll to latest message
   useEffect(() => {
@@ -472,7 +571,23 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
     setMessage("");
     removeImage();
   };
-
+  const exportChatAsTxt = (id: string) => {
+    const chatMessages = chats[id] || [];
+    const title = chatTitles[id] || DEFAULT_TITLE;
+    const lines = chatMessages.map(
+      (m) => `${m.role === "user" ? "You" : "Gen-Xora"}: ${m.text}`
+    );
+    const content = `${title}\n${"=".repeat(title.length)}\n\n${lines.join("\n\n")}`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]+/gi, "_").toLowerCase() || "chat"}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   const handleDeleteChat = (id: string) => {
     const remainingOrder = chatOrder.filter((c) => c !== id);
 
@@ -481,7 +596,17 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
       delete updated[id];
       return updated;
     });
-    setChatTitles((prev) => {
+   setChatTitles((prev) => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+    setPinnedChats((prev) => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+    setRenamedChats((prev) => {
       const updated = { ...prev };
       delete updated[id];
       return updated;
@@ -500,7 +625,32 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
       setCurrentChatId(newId);
     }
   };
+  const startRenaming = (id: string, currentTitle: string) => {
+    setRenamingChatId(id);
+    setRenameValue(currentTitle);
+  };
+  const togglePin = (id: string) => {
+    setPinnedChats((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+  const cancelRename = () => {
+    skipBlurCommitRef.current = true;
+    setRenamingChatId(null);
+    setRenameValue("");
+  };
 
+  const commitRename = (id: string) => {
+    if (skipBlurCommitRef.current) {
+      skipBlurCommitRef.current = false;
+      return;
+    }
+    const trimmed = renameValue.trim();
+    if (trimmed) {
+      setChatTitles((prev) => ({ ...prev, [id]: deriveTitle(trimmed) }));
+      setRenamedChats((prev) => ({ ...prev, [id]: true }));
+    }
+    setRenamingChatId(null);
+    setRenameValue("");
+  };
   const sendMessage = async () => {
     if (!message.trim() || loading || !currentChatId) return;
 
@@ -563,7 +713,7 @@ if (
       [currentChatId]: [...(prev[currentChatId] || []), { role: "user", text: userMessage }],
     }));
 
-    if (isFirstMessage) {
+   if (isFirstMessage && !renamedChats[currentChatId]) {
       setChatTitles((prev) => ({ ...prev, [currentChatId]: deriveTitle(userMessage) }));
     }
 
@@ -573,9 +723,10 @@ if (
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+       body: JSON.stringify({
           message: finalMessage,
           image: pendingImage ? await convertToBase64(pendingImage) : null,
+          model: geminiModel,
         }),
       });
 
@@ -673,9 +824,16 @@ const data = await res.json();
         .gx-chat-item { position: relative; transition: background 0.15s ease; }
         .gx-chat-item:hover { background: #232323; }
         .gx-chat-item.active { background: #2a2a2a; }
-        .gx-chat-item .gx-delete-btn { opacity: 0; transition: opacity 0.15s ease, color 0.15s ease; }
-        .gx-chat-item:hover .gx-delete-btn { opacity: 1; }
+       .gx-chat-item .gx-delete-btn,
+        .gx-chat-item .gx-pin-btn,
+        .gx-chat-item .gx-export-btn { opacity: 0; transition: opacity 0.15s ease, color 0.15s ease; }
+        .gx-chat-item:hover .gx-delete-btn,
+        .gx-chat-item:hover .gx-pin-btn,
+        .gx-chat-item:hover .gx-export-btn { opacity: 1; }
         .gx-delete-btn:hover { color: #ff6b6b !important; }
+        .gx-pin-btn:hover { color: #ffd166 !important; }
+        .gx-export-btn:hover { color: #8ab4f8 !important; }
+        .gx-pin-btn.pinned { opacity: 1 !important; color: #ffd166; }
 
         .gx-icon-btn { transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease; }
         .gx-icon-btn:hover:not(:disabled) { background: #333333; color: #ffffff; }
@@ -700,6 +858,20 @@ const data = await res.json();
         .gx-markdown pre code { background: transparent; padding: 0; }
         .gx-markdown ul, .gx-markdown ol { margin: 0 0 10px 20px; }
         .gx-markdown a { color: #8ab4f8; }
+        @keyframes gx-bounce {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+        .gx-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #aaaaaa;
+          display: inline-block;
+          animation: gx-bounce 1.2s infinite ease-in-out;
+        }
+        .gx-dot:nth-child(2) { animation-delay: 0.15s; }
+        .gx-dot:nth-child(3) { animation-delay: 0.3s; }
       `}</style>
 
       {/* Sidebar */}
@@ -727,6 +899,22 @@ const data = await res.json();
   <option>VLSI Expert</option>
   <option>Coding Assistant</option>
 </select>
+<select
+          value={geminiModel}
+          onChange={(e) => setGeminiModel(e.target.value as "flash" | "pro")}
+          style={{
+            width: "100%",
+            padding: "10px",
+            borderRadius: "8px",
+            background: "#222",
+            color: "white",
+            border: "1px solid #333",
+            marginBottom: "15px",
+          }}
+        >
+          <option value="flash">Gemini Flash (Fast)</option>
+          <option value="pro">Gemini Pro (Smart)</option>
+        </select>
         <label
   style={{
     display: "flex",
@@ -746,7 +934,7 @@ const data = await res.json();
   />
   Voice Output
 </label>
-        <button
+       <button
           type="button"
           className="gx-new-chat-btn"
           style={styles.newChatBtn}
@@ -756,27 +944,93 @@ const data = await res.json();
           New chat
         </button>
 
+        <div style={styles.searchWrap}>
+          <span style={styles.searchIcon}>
+            <SearchIcon />
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search chats..."
+            style={styles.searchInput}
+          />
+        </div>
+
         <div className="gx-scroll" style={styles.chatList}>
-          {chatOrder.map((id) => (
+          {visibleChatOrder.map((id) => (
             <div
               key={id}
               className={`gx-chat-item${id === currentChatId ? " active" : ""}`}
               style={styles.chatItem}
               onClick={() => setCurrentChatId(id)}
             >
-              <span style={styles.chatItemTitle}>{chatTitles[id] || DEFAULT_TITLE}</span>
-              <button
-                type="button"
-                className="gx-delete-btn"
-                style={styles.deleteBtn}
-                aria-label="Delete chat"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteChat(id);
-                }}
-              >
-                <TrashIcon />
-              </button>
+              {renamingChatId === id ? (
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur();
+                    } else if (e.key === "Escape") {
+                      cancelRename();
+                    }
+                  }}
+                  onBlur={() => commitRename(id)}
+                  style={styles.renameInput}
+                />
+              ) : (
+                <span
+                  style={styles.chatItemTitle}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    startRenaming(id, chatTitles[id] || DEFAULT_TITLE);
+                  }}
+                >
+                  {chatTitles[id] || DEFAULT_TITLE}
+                </span>
+              )}
+
+              <div style={styles.chatActions}>
+                <button
+                  type="button"
+                  className={`gx-pin-btn${pinnedChats[id] ? " pinned" : ""}`}
+                  style={styles.deleteBtn}
+                  aria-label={pinnedChats[id] ? "Unpin chat" : "Pin chat"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePin(id);
+                  }}
+                >
+                  <PinIcon filled={!!pinnedChats[id]} />
+                </button>
+                <button
+                  type="button"
+                  className="gx-export-btn"
+                  style={styles.deleteBtn}
+                  aria-label="Export chat as text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportChatAsTxt(id);
+                  }}
+                >
+                  <DownloadIcon />
+                </button>
+                <button
+                  type="button"
+                  className="gx-delete-btn"
+                  style={styles.deleteBtn}
+                  aria-label="Delete chat"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteChat(id);
+                  }}
+                >
+                  <TrashIcon />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -840,10 +1094,14 @@ const data = await res.json();
               </div>
             ))}
 
-            {loading && (
+           {loading && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                 <span style={styles.roleLabel}>Gen-Xora</span>
-                <div style={styles.thinking}>Thinking...</div>
+                <div style={styles.thinking}>
+                  <span className="gx-dot" />
+                  <span className="gx-dot" />
+                  <span className="gx-dot" />
+                </div>
               </div>
             )}
 

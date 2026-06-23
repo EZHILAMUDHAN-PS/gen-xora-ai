@@ -3,14 +3,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { message , image} = await req.json();
+   const { message, image, model } = await req.json();
+    const selectedModel = model === "pro" ? "gemini-2.5-pro" : "gemini-2.0-flash";
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY!,
     });
 
-   const response =
+  const response =
   await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: selectedModel,
     contents: image
       ? [
           {
@@ -34,8 +35,13 @@ export async function POST(req: Request) {
   } catch (error: any) {
   console.error(error);
 
-  return NextResponse.json({
-    reply: JSON.stringify(error, null, 2),
-  });
+  return NextResponse.json(
+  {
+    reply:
+      error?.message ||
+      "Gemini API Error",
+  },
+  { status: 500 }
+);
 }
 }
