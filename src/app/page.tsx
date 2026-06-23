@@ -367,7 +367,9 @@ export default function Home() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-const [voiceEnabled, setVoiceEnabled] = useState(false);    
+const [voiceEnabled, setVoiceEnabled] = useState(false); 
+   const [assistantMode, setAssistantMode] =
+  useState("General Assistant");
   const [chats, setChats] = useState<ChatStore>({});
   const [chatTitles, setChatTitles] = useState<ChatTitles>({});
   const [chatOrder, setChatOrder] = useState<string[]>([]);
@@ -503,6 +505,52 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
     if (!message.trim() || loading || !currentChatId) return;
 
     const userMessage = message.trim();
+    let finalMessage = userMessage;
+
+if (
+  assistantMode ===
+  "Study Assistant"
+) {
+  finalMessage =
+    "You are an expert study assistant. " +
+    userMessage;
+}
+
+if (
+  assistantMode ===
+  "Resume Reviewer"
+) {
+  finalMessage =
+    "You are an ATS resume expert. " +
+    userMessage;
+}
+
+if (
+  assistantMode ===
+  "Japanese Teacher"
+) {
+  finalMessage =
+    "You are a JLPT Japanese teacher. " +
+    userMessage;
+}
+
+if (
+  assistantMode ===
+  "VLSI Expert"
+) {
+  finalMessage =
+    "You are a VLSI engineer and trainer. " +
+    userMessage;
+}
+
+if (
+  assistantMode ===
+  "Coding Assistant"
+) {
+  finalMessage =
+    "You are an expert software engineer. " +
+    userMessage;
+}
     const isFirstMessage = messages.length === 0;
     const pendingImage = image;
 
@@ -526,7 +574,7 @@ const [voiceEnabled, setVoiceEnabled] = useState(false);
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMessage,
+          message: finalMessage,
           image: pendingImage ? await convertToBase64(pendingImage) : null,
         }),
       });
@@ -657,6 +705,28 @@ const data = await res.json();
       {/* Sidebar */}
       <aside style={styles.sidebar}>
         <div style={styles.sidebarHeader}>Gen-Xora</div>
+        <select
+  value={assistantMode}
+  onChange={(e) =>
+    setAssistantMode(e.target.value)
+  }
+  style={{
+    width: "100%",
+    padding: "10px",
+    borderRadius: "8px",
+    background: "#222",
+    color: "white",
+    border: "1px solid #333",
+    marginBottom: "15px",
+  }}
+>
+  <option>General Assistant</option>
+  <option>Study Assistant</option>
+  <option>Resume Reviewer</option>
+  <option>Japanese Teacher</option>
+  <option>VLSI Expert</option>
+  <option>Coding Assistant</option>
+</select>
         <label
   style={{
     display: "flex",
